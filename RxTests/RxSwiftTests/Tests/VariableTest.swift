@@ -49,9 +49,9 @@ class VariableTest : RxTest {
         var latestValue: Int?
         var completed = false
         
-        let subscription = c.subscribe(next: { next in
+        let subscription = c.subscribe(onNext: { next in
             latestValue = next
-        }, completed: {
+        }, onCompleted: {
             completed = true
         })
         

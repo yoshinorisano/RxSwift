@@ -26,19 +26,19 @@ extension ObservableType {
     /**
     Subscribes an element handler, an error handler, a completion handler and disposed handler to an observable sequence.
     
-    - parameter next: Action to invoke for each element in the observable sequence.
-    - parameter error: Action to invoke upon errored termination of the observable sequence.
-    - parameter completed: Action to invoke upon graceful termination of the observable sequence.
-    - parameter disposed: Action to invoke upon any type of termination of sequence (if the sequence has
+    - parameter onNext: Action to invoke for each element in the observable sequence.
+    - parameter onError: Action to invoke upon errored termination of the observable sequence.
+    - parameter onCompleted: Action to invoke upon graceful termination of the observable sequence.
+    - parameter onDisposed: Action to invoke upon any type of termination of sequence (if the sequence has
         gracefully completed, errored, or if the generation is cancelled by disposing subscription)
     - returns: Subscription object used to unsubscribe from the observable sequence.
     */
-    public func subscribe(next next: ((E) -> Void)? = nil, error: ((ErrorType) -> Void)? = nil, completed: (() -> Void)? = nil, disposed: (() -> Void)? = nil)
+    public func subscribe(onNext onNext: ((E) -> Void)? = nil, onError: ((ErrorType) -> Void)? = nil, onCompleted: (() -> Void)? = nil, onDisposed: (() -> Void)? = nil)
         -> Disposable {
         
         let disposable: Disposable
         
-        if let disposed = disposed {
+        if let disposed = onDisposed {
             disposable = AnonymousDisposable(disposed)
         }
         else {
@@ -48,12 +48,12 @@ extension ObservableType {
         let observer = AnonymousObserver<E> { e in
             switch e {
             case .Next(let value):
-                next?(value)
+                onNext?(value)
             case .Error(let e):
-                error?(e)
+                onError?(e)
                 disposable.dispose()
             case .Completed:
-                completed?()
+                onCompleted?()
                 disposable.dispose()
             }
         }

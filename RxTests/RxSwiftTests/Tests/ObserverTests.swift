@@ -44,8 +44,8 @@ extension ObserverTests {
         var errrorNotification: NSError!
         
         a.subscribe(
-            next: { n in elements.append(n) },
-            error: { e in
+            onNext: { n in elements.append(n) },
+            onError: { e in
                 errrorNotification = e as NSError
             }
         )
