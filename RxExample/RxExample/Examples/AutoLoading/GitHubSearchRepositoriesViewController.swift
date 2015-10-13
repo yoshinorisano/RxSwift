@@ -172,6 +172,15 @@ class GitHubSearchRepositoriesAPI {
     }
 }
 
+// Just proof of concept, do nothing...
+func apiClientResponse(url: String) -> Observable<String> {
+    return create { observer in
+        observer.on(.Next(url))
+        observer.on(.Completed)
+        return AnonymousDisposable {}
+    }
+}
+
 class GitHubSearchRepositoriesViewController: ViewController, UITableViewDelegate {
     static let startLoadingOffset: CGFloat = 20.0
 
@@ -224,6 +233,8 @@ class GitHubSearchRepositoriesViewController: ViewController, UITableViewDelegat
                     : empty()
             }
 
+        var tasks: [Observable<String>] = []
+
         searchBar.rx_text
             .throttle(0.3, $.mainScheduler)
             .distinctUntilChanged()
@@ -239,7 +250,25 @@ class GitHubSearchRepositoriesViewController: ViewController, UITableViewDelegat
             .subscribeNext { [unowned self] result in
                 switch result {
                 case .Repositories(let repositories):
-                    self.repositories.value = repositories
+                    for repository in repositories {
+                        tasks.append(apiClientResponse(repository.url))
+                    }
+                    tasks.zip { results in
+                        for result in results {
+                            print(result)
+                        }
+                        // If this closure is executed not on main thread, the following error will occur:
+                        // fatal error: Executing on backgound thread. Please use `MainScheduler.sharedInstance.schedule`
+                        // to schedule work on main thread.: file [...]/RxSwift/Rx.swift, line 30
+                        self.repositories.value = repositories
+
+                        // If you comment out this, you can reproduce the problem mentioned above.
+                        //dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)) {
+                        //    self.repositories.value = repositories
+                        //}
+                    }
+                    .subscribeNext {}
+                    .addDisposableTo(self.disposeBag)
                 case .LimitExceeded:
                     self.repositories.value = []
                     showAlert("Exceeded limit of 10 non authenticated requests per minute for GitHub API. Please wait a minute. :(\nhttps://developer.github.com/v3/#rate-limiting")
